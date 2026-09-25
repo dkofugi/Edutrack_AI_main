@@ -1,0 +1,181 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "EduTrack AI REST API (OpenSpec)",
+    "description": "Especificação formal dos contratos de dados e serviços do assistente acadêmico EduTrack AI.",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Servidor Local de Desenvolvimento / Testes"
+    }
+  ],
+  "paths": {
+    "/api/login": {
+      "post": {
+        "summary": "Autenticação segura de usuário",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["login", "senha"],
+                "properties": {
+                  "login": { "type": "string", "format": "email", "example": "aluno@edutrack.ai" },
+                  "senha": { "type": "string", "example": "123456" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Autenticação realizada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sucesso": { "type": "boolean", "example": true },
+                    "token": { "type": "string" },
+                    "usuario": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "login": { "type": "string" },
+                        "situacao": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas ou usuário bloqueado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sucesso": { "type": "boolean", "example": false },
+                    "mensagem": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/register": {
+      "post": {
+        "summary": "Cadastro de novo usuário com hash Bcrypt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["login", "senha"],
+                "properties": {
+                  "login": { "type": "string", "format": "email" },
+                  "senha": { "type": "string", "minLength": 6 },
+                  "situacao": { "type": "string", "default": "ativo" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuário cadastrado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sucesso": { "type": "boolean", "example": true },
+                    "mensagem": { "type": "string" },
+                    "usuario": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Dados inválidos ou e-mail duplicado" }
+        }
+      }
+    },
+    "/api/v1/study-sessions": {
+      "get": {
+        "summary": "Lista as sessões de estudo realizadas",
+        "parameters": [
+          { "name": "subject_id", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de sessões retornada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sucesso": { "type": "boolean" },
+                    "total_seconds": { "type": "integer" },
+                    "total_sessions": { "type": "integer" },
+                    "sessoes": { "type": "array", "items": { "$ref": "#/components/schemas/StudySession" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Registra uma nova sessão de estudos concluída no cronômetro",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["subject_id", "lesson_title", "duration_seconds"],
+                "properties": {
+                  "subject_id": { "type": "integer" },
+                  "task_id": { "type": "integer", "nullable": true },
+                  "lesson_title": { "type": "string" },
+                  "duration_seconds": { "type": "integer" },
+                  "started_at": { "type": "string", "format": "date-time" },
+                  "ended_at": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Sessão registrada com sucesso" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StudySession": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "subject_id": { "type": "integer" },
+          "task_id": { "type": "integer", "nullable": true },
+          "lesson_title": { "type": "string" },
+          "duration_seconds": { "type": "integer" },
+          "started_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

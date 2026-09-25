@@ -1,0 +1,20 @@
+﻿{
+  "name": "edutrack-ai",
+  "version": "1.0.0",
+  "description": "EduTrack AI — Gestão Acadêmica Inteligente com Autenticação PostgreSQL e Bcrypt",
+  "main": "server.py",
+  "scripts": {
+    "start": "py server.py",
+    "test": "py -m unittest discover -s tests -p \"test_*.py\"",
+    "test:auth": "py -m unittest tests/test_auth.py"
+  },
+  "keywords": [
+    "edutrack",
+    "academic",
+    "postgresql",
+    "bcrypt",
+    "authentication"
+  ],
+  "author": "EduTrack AI Team",
+  "license": "MIT"
+}

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#10b981" />
+  <title>EduTrack AI — Gestão Acadêmica Inteligente</title>
+
+  <!-- Google Fonts para tipografia limpa e moderna -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos CSS Modulares -->
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/views.css" />
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <!-- Desktop Sidebar (Visível em Telas Desktop / PC >= 768px) -->
+    <aside class="desktop-sidebar" id="desktop-sidebar">
+      <div class="sidebar-top">
+        <!-- Logo & Marca -->
+        <a href="javascript:void(0)" class="sidebar-brand">
+          <div class="brand-icon">E</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="brand-name">EduTrack</span>
+              <span class="brand-badge">AI</span>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 500;">Gestão Acadêmica</span>
+          </div>
+        </a>
+
+        <!-- Menu de Navegação -->
+        <nav class="sidebar-nav">
+          <button class="sidebar-nav-item active" id="sidebar-nav-dashboard" data-route="dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Dashboard</span>
+          </button>
+
+          <button class="sidebar-nav-item" id="sidebar-nav-subjects" data-route="subjects">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span>Disciplinas</span>
+          </button>
+
+          <button class="sidebar-nav-item" id="sidebar-nav-tasks" data-route="tasks">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>Tarefas</span>
+          </button>
+        </nav>
+
+        <!-- Atalhos Rápidos Desktop -->
+        <div class="sidebar-actions">
+          <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.05em; padding-left: 8px;">
+            Ações Rápidas
+          </div>
+          <button class="btn btn-primary btn-sm" id="sidebar-btn-start-lesson" style="justify-content: flex-start; background: linear-gradient(135deg, #059669, #10b981);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Iniciar Lição
+          </button>
+          <button class="btn btn-secondary btn-sm" id="sidebar-btn-new-subject" style="justify-content: flex-start;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Disciplina
+          </button>
+          <button class="btn btn-secondary btn-sm" id="sidebar-btn-new-task" style="justify-content: flex-start;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Tarefa
+          </button>
+        </div>
+      </div>
+
+      <!-- Rodapé da Sidebar: Perfil & Preferências -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user-card">
+          <div class="sidebar-user-info">
+            <div class="sidebar-avatar" id="sidebar-user-avatar">A</div>
+            <div class="sidebar-user-details">
+              <span class="sidebar-user-name" id="sidebar-user-name">Ana Clara</span>
+              <span class="sidebar-user-email" id="sidebar-user-email">aluno@edutrack.ai</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between;">
+          <button id="sidebar-btn-theme" class="btn btn-secondary btn-sm" style="flex: 1; font-size: 0.78rem;" title="Mudar tema claro/escuro">
+            <span id="sidebar-theme-icon">🌙</span>
+            <span>Tema</span>
+          </button>
+          <button id="sidebar-btn-logout" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; color: var(--danger);" title="Sair da conta">
+            Sair
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Layout Wrapper (Para telas Desktop e Mobile) -->
+    <div class="main-layout-wrapper">
+      <!-- Mobile Header (Visível apenas em telas < 768px) -->
+      <header class="app-header" id="app-header">
+        <a href="javascript:void(0)" class="brand">
+          <div class="brand-icon">E</div>
+          <span class="brand-name">EduTrack</span>
+          <span class="brand-badge">AI</span>
+        </a>
+
+        <div class="header-actions">
+          <button id="btn-header-start-lesson" class="btn-icon btn-secondary" title="Iniciar Lição de Estudo" style="color: var(--primary-600);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </button>
+
+          <button id="btn-toggle-theme" class="btn-icon btn-secondary" title="Alternar tema">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <button id="btn-header-logout" class="btn-icon btn-secondary" title="Sair da conta" style="display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Dynamic Main Content Area (Injetado pelo Router) -->
+      <main id="main-content">
+        <!-- O conteúdo da tela ativa será renderizado aqui -->
+      </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (Visível apenas em < 768px) -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" id="nav-dashboard" data-route="dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+
+      <button class="nav-item" id="nav-subjects" data-route="subjects">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>Disciplinas</span>
+      </button>
+
+      <button class="nav-item" id="nav-tasks" data-route="tasks">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>Tarefas</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Container do Cronômetro Flutuante de Lição -->
+  <div id="study-timer-container"></div>
+
+  <!-- Container Global de Modais -->
+  <div id="app-modal-container"></div>
+
+  <!-- Container de Notificações Toast -->
+  <div id="toast-container"></div>
+
+  <!-- App Main Module -->
+  <script type="module" src="js/app.js?v=2.0"></script>
+</body>
+</html>
