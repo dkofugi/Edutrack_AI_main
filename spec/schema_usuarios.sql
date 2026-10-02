@@ -3,6 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
+    nome VARCHAR(120),
     login VARCHAR(150) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     situacao VARCHAR(50) NOT NULL DEFAULT 'ativo',

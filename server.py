@@ -24,6 +24,11 @@ from backend.advanced_metrics import calcular_progresso_ponderado, estimar_concl
 
 PORT = 8000
 REPO = UsuarioRepository()
+
+# Checagem estrita de inicialização: aborta se cair em fallback SQLite quando DATABASE_URL/PG* estiverem configuradas
+if not REPO.use_postgres and (os.getenv("DATABASE_URL") or os.getenv("PGHOST")):
+    sys.exit("[ERRO CRÍTICO] A conexão com o PostgreSQL falhou e o servidor recusou continuar em modo fallback SQLite.")
+
 AUTH_SERVICE = AuthService(repository=REPO)
 
 # Garante a existência de um usuário inicial de teste com hash bcrypt

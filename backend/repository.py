@@ -36,9 +36,9 @@ class UsuarioRepository:
                     conn.close()
                     self.use_postgres = True
                 except Exception as exc:
-                    print(f"[!] Falha na conexão PostgreSQL (DATABASE_URL): [{type(exc).__name__}] {exc}")
-                    print("[!] Ativando fallback para SQLite local.")
+                    print(f"[!] Erro crítico na conexão PostgreSQL (DATABASE_URL): [{type(exc).__name__}] {exc}")
                     self.use_postgres = False
+                    raise RuntimeError(f"Falha ao conectar no PostgreSQL via DATABASE_URL: {exc}") from exc
             elif os.getenv("PGHOST") and os.getenv("PGDATABASE"):
                 try:
                     conn = self.pg_module.connect(
@@ -52,9 +52,9 @@ class UsuarioRepository:
                     conn.close()
                     self.use_postgres = True
                 except Exception as exc:
-                    print(f"[!] Falha na conexão PostgreSQL (PGHOST/PGDATABASE): [{type(exc).__name__}] {exc}")
-                    print("[!] Ativando fallback para SQLite local.")
+                    print(f"[!] Erro crítico na conexão PostgreSQL (PGHOST/PGDATABASE): [{type(exc).__name__}] {exc}")
                     self.use_postgres = False
+                    raise RuntimeError(f"Falha ao conectar no PostgreSQL via PGHOST: {exc}") from exc
             else:
                 print("[!] Nenhuma variável de conexão PostgreSQL (DATABASE_URL ou PGHOST/PGDATABASE) configurada no ambiente.")
                 print("[!] Ativando fallback para SQLite local.")
@@ -208,12 +208,13 @@ class UsuarioRepository:
                     """, (login_normalizado, senha_hash, situacao, now, now))
                     row = cur.fetchone()
                     conn.commit()
+                    created_at_val = row[3].isoformat() if hasattr(row[3], "isoformat") else str(row[3])
                     return {
                         "id": row[0],
                         "nome": None,
                         "login": row[1],
                         "situacao": row[2],
-                        "created_at": row[3],
+                        "created_at": created_at_val,
                     }
             else:
                 cur = conn.execute("""
