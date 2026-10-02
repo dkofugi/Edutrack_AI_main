@@ -191,7 +191,7 @@ class StudyTimer {
     this.renderWidget();
   }
 
-  finishLesson(showToast = true) {
+  async finishLesson(showToast = true) {
     if (!this.state.isActive) return;
 
     this.stopTicker();
@@ -199,53 +199,57 @@ class StudyTimer {
     const subject = store.getSubjectById(this.state.subjectId);
     const subjectName = subject ? subject.name : "Disciplina";
 
-    // Salva a sessão no histórico do store
-    store.addStudySession({
-      subject_id: this.state.subjectId,
-      task_id: this.state.taskId,
-      lesson_title: this.state.lessonTitle,
-      duration_seconds: duration,
-      started_at: this.state.initialDate || new Date(Date.now() - duration * 1000).toISOString(),
-      ended_at: new Date().toISOString()
-    });
+    try {
+      // Salva a sessão no histórico do backend/store
+      await store.addStudySession({
+        subject_id: this.state.subjectId,
+        task_id: this.state.taskId,
+        lesson_title: this.state.lessonTitle,
+        duration_seconds: duration,
+        started_at: this.state.initialDate || new Date(Date.now() - duration * 1000).toISOString(),
+        ended_at: new Date().toISOString()
+      });
 
-    // Se houver tarefa vinculada, oferece para marcar como concluída
-    if (this.state.taskId) {
-      const task = store.getTaskById(this.state.taskId);
-      if (task && task.status !== "completed") {
-        const markDone = confirm(`Você concluiu a sessão de estudos de "${task.title}". Deseja marcar esta tarefa como concluída no sistema?`);
-        if (markDone) {
-          store.updateTask(task.id, { status: "completed" });
-          window.appToast("Tarefa marcada como concluída com sucesso! 🎉", "success");
+      // Se houver tarefa vinculada, oferece para marcar como concluída
+      if (this.state.taskId) {
+        const task = store.getTaskById(this.state.taskId);
+        if (task && task.status !== "completed") {
+          const markDone = confirm(`Você concluiu a sessão de estudos de "${task.title}". Deseja marcar esta tarefa como concluída no sistema?`);
+          if (markDone) {
+            await store.updateTask(task.id, { status: "completed" });
+            window.appToast("Tarefa marcada como concluída com sucesso! 🎉", "success");
+          }
         }
       }
-    }
 
-    const formattedTime = this.formatDurationText(duration);
+      const formattedTime = this.formatDurationText(duration);
 
-    // Reseta estado
-    this.state = {
-      isActive: false,
-      isPaused: false,
-      isMinimized: false,
-      subjectId: null,
-      taskId: null,
-      lessonTitle: "",
-      startTimestamp: null,
-      pausedTimestamp: null,
-      accumulatedSeconds: 0
-    };
-    this.saveState();
-    this.renderWidget();
+      // Reseta estado
+      this.state = {
+        isActive: false,
+        isPaused: false,
+        isMinimized: false,
+        subjectId: null,
+        taskId: null,
+        lessonTitle: "",
+        startTimestamp: null,
+        pausedTimestamp: null,
+        accumulatedSeconds: 0
+      };
+      this.saveState();
+      this.renderWidget();
 
-    if (showToast) {
-      window.appToast(`🎉 Lição concluída com sucesso! Você focou por ${formattedTime} em ${subjectName}.`, "success");
-    }
+      if (showToast) {
+        window.appToast(`🎉 Lição concluída com sucesso! Você focou por ${formattedTime} em ${subjectName}.`, "success");
+      }
 
-    // Se estiver em views que mostram progresso/sessões, re-renderiza
-    if (router.currentRoute === "dashboard") {
-      const content = document.getElementById("main-content");
-      if (content) router.renderCurrent();
+      // Se estiver em views que mostram progresso/sessões, re-renderiza
+      if (router.currentRoute === "dashboard") {
+        const content = document.getElementById("main-content");
+        if (content) router.renderCurrent();
+      }
+    } catch (e) {
+      window.appToast("Erro ao salvar sessão de estudo no servidor.", "danger");
     }
   }
 

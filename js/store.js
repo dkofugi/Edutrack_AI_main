@@ -15,6 +15,11 @@ class Store {
     this.data = this.loadData();
     this.currentUser = this.loadAuth();
     this.listeners = [];
+    this.loading = false;
+
+    if (this.currentUser) {
+      this.syncWithBackend();
+    }
   }
 
   loadData() {
@@ -176,6 +181,47 @@ class Store {
     this.saveAuth(null);
   }
 
+  async syncWithBackend() {
+    if (!this.currentUser || !this.currentUser.id) return;
+    this.loading = true;
+    this.notify();
+
+    try {
+      const [resSub, resTask, resSess] = await Promise.all([
+        this._fetchJson(`/api/disciplinas?usuario_id=${this.currentUser.id}`),
+        this._fetchJson(`/api/tarefas?usuario_id=${this.currentUser.id}`),
+        this._fetchJson(`/api/sessoes?usuario_id=${this.currentUser.id}`)
+      ]);
+
+      if (resSub && (resSub.disciplinas || resSub.subjects)) {
+        this.data.subjects = resSub.disciplinas || resSub.subjects;
+      }
+      if (resTask && (resTask.tarefas || resTask.academic_tasks)) {
+        this.data.academic_tasks = resTask.tarefas || resTask.academic_tasks;
+      }
+      if (resSess && (resSess.sessoes || resSess.study_sessions)) {
+        this.data.study_sessions = resSess.sessoes || resSess.study_sessions;
+      }
+      this.saveData(this.data);
+    } catch (e) {
+      console.warn("Erro ao sincronizar com backend PostgreSQL:", e);
+    } finally {
+      this.loading = false;
+      this.notify();
+    }
+  }
+
+  saveAuth(user) {
+    this.currentUser = user;
+    if (user) {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+      this.syncWithBackend();
+    } else {
+      localStorage.removeItem(AUTH_KEY);
+      this.notify();
+    }
+  }
+
   // --- DISCIPLINAS (SUBJECTS) ---
   getSubjects() {
     return this.data.subjects || [];
@@ -183,58 +229,100 @@ class Store {
 
   getSubjectById(id) {
     const numId = Number(id);
-    return this.data.subjects.find(s => s.id === numId) || null;
+    return (this.data.subjects || []).find(s => s.id === numId) || null;
   }
 
-  addSubject(subjectData) {
-    const newSubject = {
-      id: Date.now(),
-      user_id: this.currentUser ? this.currentUser.id : 1,
-      name: subjectData.name.trim(),
+  async addSubject(subjectData) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
+    const payload = {
+      usuario_id: userId,
+      nome: subjectData.name ? subjectData.name.trim() : "",
       professor: subjectData.professor ? subjectData.professor.trim() : "",
-      workload_hours: parseInt(subjectData.workload_hours, 10) || 0,
-      description: subjectData.description ? subjectData.description.trim() : "",
-      start_date: subjectData.start_date || "",
-      end_date: subjectData.end_date || "",
-      color: subjectData.color || "#10b981",
-      created_at: new Date().toISOString()
+      carga_horaria: parseInt(subjectData.workload_hours, 10) || 0,
+      descricao: subjectData.description ? subjectData.description.trim() : "",
+      data_inicio: subjectData.start_date || "",
+      data_fim: subjectData.end_date || "",
+      cor: subjectData.color || "#10b981"
     };
 
-    this.data.subjects.push(newSubject);
-    this.saveData(this.data);
-    this.notify();
-    return newSubject;
+    try {
+      const res = await this._fetchJson("/api/disciplinas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": String(userId)
+        },
+        body: JSON.stringify(payload)
+      });
+      const newSubject = res.disciplina || res.subject;
+      this.data.subjects = this.data.subjects || [];
+      this.data.subjects.push(newSubject);
+      this.saveData(this.data);
+      this.notify();
+      return newSubject;
+    } catch (e) {
+      console.error("Erro ao adicionar disciplina:", e);
+      throw e;
+    }
   }
 
-  updateSubject(id, subjectData) {
+  async updateSubject(id, subjectData) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
     const numId = Number(id);
-    const index = this.data.subjects.findIndex(s => s.id === numId);
-    if (index === -1) return null;
-
-    this.data.subjects[index] = {
-      ...this.data.subjects[index],
-      name: subjectData.name.trim(),
+    const payload = {
+      id: numId,
+      usuario_id: userId,
+      nome: subjectData.name ? subjectData.name.trim() : "",
       professor: subjectData.professor ? subjectData.professor.trim() : "",
-      workload_hours: parseInt(subjectData.workload_hours, 10) || 0,
-      description: subjectData.description ? subjectData.description.trim() : "",
-      start_date: subjectData.start_date || "",
-      end_date: subjectData.end_date || "",
-      color: subjectData.color || this.data.subjects[index].color,
-      updated_at: new Date().toISOString()
+      carga_horaria: parseInt(subjectData.workload_hours, 10) || 0,
+      descricao: subjectData.description ? subjectData.description.trim() : "",
+      data_inicio: subjectData.start_date || "",
+      data_fim: subjectData.end_date || "",
+      cor: subjectData.color || "#10b981"
     };
 
-    this.saveData(this.data);
-    this.notify();
-    return this.data.subjects[index];
+    try {
+      const res = await this._fetchJson("/api/disciplinas", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": String(userId)
+        },
+        body: JSON.stringify(payload)
+      });
+      const updated = res.disciplina || res.subject;
+      const index = (this.data.subjects || []).findIndex(s => s.id === numId);
+      if (index !== -1) {
+        this.data.subjects[index] = updated;
+      }
+      this.saveData(this.data);
+      this.notify();
+      return updated;
+    } catch (e) {
+      console.error("Erro ao atualizar disciplina:", e);
+      throw e;
+    }
   }
 
-  deleteSubject(id) {
+  async deleteSubject(id) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
     const numId = Number(id);
-    this.data.subjects = this.data.subjects.filter(s => s.id !== numId);
-    // Remove também as tarefas vinculadas (ON DELETE CASCADE)
-    this.data.academic_tasks = this.data.academic_tasks.filter(t => t.subject_id !== numId);
-    this.saveData(this.data);
-    this.notify();
+
+    try {
+      await this._fetchJson(`/api/disciplinas?id=${numId}&usuario_id=${userId}`, {
+        method: "DELETE",
+        headers: {
+          "X-User-Id": String(userId)
+        }
+      });
+      this.data.subjects = (this.data.subjects || []).filter(s => s.id !== numId);
+      this.data.academic_tasks = (this.data.academic_tasks || []).filter(t => (t.subject_id || t.disciplina_id) !== numId);
+      this.saveData(this.data);
+      this.notify();
+    } catch (e) {
+      console.error("Erro ao deletar disciplina:", e);
+      throw e;
+    }
   }
 
   // --- TAREFAS ACADÊMICAS (ACADEMIC_TASKS) ---
@@ -242,7 +330,7 @@ class Store {
     let tasks = this.data.academic_tasks || [];
     if (subjectId !== null) {
       const numSubjectId = Number(subjectId);
-      tasks = tasks.filter(t => t.subject_id === numSubjectId);
+      tasks = tasks.filter(t => (t.subject_id || t.disciplina_id) === numSubjectId);
     }
     if (filterStatus && filterStatus !== "all") {
       tasks = tasks.filter(t => t.status === filterStatus);
@@ -252,60 +340,104 @@ class Store {
 
   getTaskById(id) {
     const numId = Number(id);
-    return this.data.academic_tasks.find(t => t.id === numId) || null;
+    return (this.data.academic_tasks || []).find(t => t.id === numId) || null;
   }
 
-  addTask(taskData) {
-    const newTask = {
-      id: Date.now(),
-      subject_id: Number(taskData.subject_id),
-      user_id: this.currentUser ? this.currentUser.id : 1,
-      title: taskData.title.trim(),
-      description: taskData.description ? taskData.description.trim() : "",
-      due_date: taskData.due_date || "",
-      status: taskData.status || "pending",
-      created_at: new Date().toISOString()
+  async addTask(taskData) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
+    const payload = {
+      usuario_id: userId,
+      disciplina_id: Number(taskData.subject_id || taskData.disciplina_id),
+      titulo: taskData.title ? taskData.title.trim() : "",
+      descricao: taskData.description ? taskData.description.trim() : "",
+      prazo: taskData.due_date || "",
+      status: taskData.status || "pending"
     };
 
-    this.data.academic_tasks.push(newTask);
-    this.saveData(this.data);
-    this.notify();
-    return newTask;
+    try {
+      const res = await this._fetchJson("/api/tarefas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": String(userId)
+        },
+        body: JSON.stringify(payload)
+      });
+      const newTask = res.tarefa || res.task;
+      this.data.academic_tasks = this.data.academic_tasks || [];
+      this.data.academic_tasks.push(newTask);
+      this.saveData(this.data);
+      this.notify();
+      return newTask;
+    } catch (e) {
+      console.error("Erro ao adicionar tarefa:", e);
+      throw e;
+    }
   }
 
-  updateTask(id, taskData) {
+  async updateTask(id, taskData) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
     const numId = Number(id);
-    const index = this.data.academic_tasks.findIndex(t => t.id === numId);
-    if (index === -1) return null;
-
-    this.data.academic_tasks[index] = {
-      ...this.data.academic_tasks[index],
-      title: taskData.title.trim(),
-      description: taskData.description ? taskData.description.trim() : "",
-      due_date: taskData.due_date || "",
-      status: taskData.status || this.data.academic_tasks[index].status,
-      updated_at: new Date().toISOString()
+    const payload = {
+      id: numId,
+      usuario_id: userId,
+      disciplina_id: Number(taskData.subject_id || taskData.disciplina_id),
+      titulo: taskData.title ? taskData.title.trim() : (taskData.titulo || ""),
+      descricao: taskData.description ? taskData.description.trim() : (taskData.descricao || ""),
+      prazo: taskData.due_date || taskData.prazo || "",
+      status: taskData.status || "pending"
     };
 
-    this.saveData(this.data);
-    this.notify();
-    return this.data.academic_tasks[index];
+    try {
+      const res = await this._fetchJson("/api/tarefas", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": String(userId)
+        },
+        body: JSON.stringify(payload)
+      });
+      const updated = res.tarefa || res.task;
+      const index = (this.data.academic_tasks || []).findIndex(t => t.id === numId);
+      if (index !== -1) {
+        this.data.academic_tasks[index] = updated;
+      }
+      this.saveData(this.data);
+      this.notify();
+      return updated;
+    } catch (e) {
+      console.error("Erro ao atualizar tarefa:", e);
+      throw e;
+    }
   }
 
-  toggleTaskStatus(id) {
+  async toggleTaskStatus(id) {
     const numId = Number(id);
     const task = this.getTaskById(numId);
     if (!task) return null;
 
     const nextStatus = task.status === "completed" ? "pending" : "completed";
-    return this.updateTask(numId, { ...task, status: nextStatus });
+    return await this.updateTask(numId, { ...task, status: nextStatus });
   }
 
-  deleteTask(id) {
+  async deleteTask(id) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
     const numId = Number(id);
-    this.data.academic_tasks = this.data.academic_tasks.filter(t => t.id !== numId);
-    this.saveData(this.data);
-    this.notify();
+
+    try {
+      await this._fetchJson(`/api/tarefas?id=${numId}&usuario_id=${userId}`, {
+        method: "DELETE",
+        headers: {
+          "X-User-Id": String(userId)
+        }
+      });
+      this.data.academic_tasks = (this.data.academic_tasks || []).filter(t => t.id !== numId);
+      this.saveData(this.data);
+      this.notify();
+    } catch (e) {
+      console.error("Erro ao deletar tarefa:", e);
+      throw e;
+    }
   }
 
   // --- SESSÕES DE ESTUDO & CRONÔMETRO (STUDY_SESSIONS) ---
@@ -313,29 +445,42 @@ class Store {
     let sessions = this.data.study_sessions || [];
     if (subjectId !== null) {
       const numSubjectId = Number(subjectId);
-      sessions = sessions.filter(s => s.subject_id === numSubjectId);
+      sessions = sessions.filter(s => (s.subject_id || s.disciplina_id) === numSubjectId);
     }
     return sessions;
   }
 
-  addStudySession(sessionData) {
-    this.data.study_sessions = this.data.study_sessions || [];
-    const newSession = {
-      id: Date.now(),
-      user_id: this.currentUser ? this.currentUser.id : 1,
-      subject_id: Number(sessionData.subject_id),
-      task_id: sessionData.task_id ? Number(sessionData.task_id) : null,
-      lesson_title: (sessionData.lesson_title || "Sessão de Estudos").trim(),
-      duration_seconds: Math.max(1, Math.round(sessionData.duration_seconds || 0)),
-      started_at: sessionData.started_at || new Date().toISOString(),
-      ended_at: sessionData.ended_at || new Date().toISOString(),
-      created_at: new Date().toISOString()
+  async addStudySession(sessionData) {
+    const userId = this.currentUser ? this.currentUser.id : 1;
+    const payload = {
+      usuario_id: userId,
+      disciplina_id: Number(sessionData.subject_id || sessionData.disciplina_id),
+      tarefa_id: sessionData.task_id || sessionData.tarefa_id ? Number(sessionData.task_id || sessionData.tarefa_id) : null,
+      titulo_licao: (sessionData.lesson_title || sessionData.titulo_licao || "Sessão de Estudos").trim(),
+      duracao_segundos: Math.max(1, Math.round(sessionData.duration_seconds || sessionData.duracao_segundos || 0)),
+      iniciado_em: sessionData.started_at || sessionData.iniciado_em || new Date().toISOString(),
+      finalizado_em: sessionData.ended_at || sessionData.finalizado_em || new Date().toISOString()
     };
 
-    this.data.study_sessions.unshift(newSession);
-    this.saveData(this.data);
-    this.notify();
-    return newSession;
+    try {
+      const res = await this._fetchJson("/api/sessoes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Id": String(userId)
+        },
+        body: JSON.stringify(payload)
+      });
+      const newSession = res.sessao || res.study_session;
+      this.data.study_sessions = this.data.study_sessions || [];
+      this.data.study_sessions.unshift(newSession);
+      this.saveData(this.data);
+      this.notify();
+      return newSession;
+    } catch (e) {
+      console.error("Erro ao salvar sessão de estudo:", e);
+      throw e;
+    }
   }
 
   getTotalStudyTime(subjectId = null) {

@@ -248,9 +248,9 @@ export const TasksView = {
 
   bindGlobalTaskEvents(container) {
     container.querySelectorAll(".task-checkbox").forEach(chk => {
-      chk.addEventListener("change", (e) => {
+      chk.addEventListener("change", async (e) => {
         const id = e.target.getAttribute("data-id");
-        store.toggleTaskStatus(id);
+        await store.toggleTaskStatus(id);
         const updated = store.getTaskById(id);
         if (updated && updated.status === "completed") {
           window.appToast("Tarefa concluída! 🎉", "success");
@@ -285,10 +285,10 @@ export const TasksView = {
     });
 
     container.querySelectorAll(".btn-delete-task").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-id");
         if (confirm("Deseja realmente excluir esta tarefa?")) {
-          store.deleteTask(id);
+          await store.deleteTask(id);
           window.appToast("Tarefa excluída.", "danger");
           this.render(container);
         }
@@ -408,7 +408,7 @@ export const TasksView = {
       if (e.target === overlay) closeModal();
     });
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const taskData = {
         subject_id: document.getElementById("task-subj-select").value,
@@ -418,17 +418,20 @@ export const TasksView = {
         description: document.getElementById("task-desc-input").value
       };
 
-      if (isEditing) {
-        store.updateTask(task.id, taskData);
-        window.appToast("Tarefa atualizada com sucesso!", "success");
-      } else {
-        store.addTask(taskData);
-        window.appToast("Nova tarefa adicionada!", "success");
-      }
-
-      closeModal();
-      if (onSavedCallback) {
-        onSavedCallback();
+      try {
+        if (isEditing) {
+          await store.updateTask(task.id, taskData);
+          window.appToast("Tarefa atualizada com sucesso!", "success");
+        } else {
+          await store.addTask(taskData);
+          window.appToast("Nova tarefa adicionada!", "success");
+        }
+        closeModal();
+        if (onSavedCallback) {
+          onSavedCallback();
+        }
+      } catch (err) {
+        window.appToast(err.message || "Erro ao salvar tarefa.", "danger");
       }
     });
   }

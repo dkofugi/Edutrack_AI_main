@@ -326,7 +326,7 @@ export const SubjectsView = {
       if (e.target === overlay) closeModal();
     });
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const subjectData = {
         name: document.getElementById("subj-name").value,
@@ -337,17 +337,20 @@ export const SubjectsView = {
         description: document.getElementById("subj-desc").value
       };
 
-      if (isEditing) {
-        store.updateSubject(subject.id, subjectData);
-        window.appToast("Disciplina atualizada com sucesso!", "success");
-      } else {
-        store.addSubject(subjectData);
-        window.appToast("Nova disciplina adicionada!", "success");
+      try {
+        if (isEditing) {
+          await store.updateSubject(subject.id, subjectData);
+          window.appToast("Disciplina atualizada com sucesso!", "success");
+        } else {
+          await store.addSubject(subjectData);
+          window.appToast("Nova disciplina adicionada!", "success");
+        }
+        closeModal();
+        const contentContainer = document.getElementById("main-content");
+        SubjectsView.render(contentContainer);
+      } catch (err) {
+        window.appToast(err.message || "Erro ao salvar disciplina.", "danger");
       }
-
-      closeModal();
-      const contentContainer = document.getElementById("main-content");
-      SubjectsView.render(contentContainer);
     });
   }
 };

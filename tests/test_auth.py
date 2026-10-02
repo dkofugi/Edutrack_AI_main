@@ -32,6 +32,8 @@ class TestAutenticacaoSegura(unittest.TestCase):
         self.temp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
         self.temp_db.close()
         self.repo = UsuarioRepository(db_path=self.temp_db.name)
+        if self.repo.use_postgres:
+            self.repo.limpar_tabela()
         self.auth_service = AuthService(repository=self.repo)
 
         self.login_teste = "aluno@edutrack.ai"
@@ -188,6 +190,11 @@ class TestAPIHttpEndpoints(unittest.TestCase):
         cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.port}"
+
+        # Garante a existência do usuário para os testes HTTP
+        from server import AUTH_SERVICE, REPO
+        if not REPO.buscar_por_login("aluno@edutrack.ai"):
+            AUTH_SERVICE.cadastrar("aluno@edutrack.ai", "123456", "ativo")
 
     @classmethod
     def tearDownClass(cls):
