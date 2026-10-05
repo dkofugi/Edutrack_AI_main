@@ -9,6 +9,7 @@ import { router } from "../router.js";
 import { ChartRenderer } from "../charts.js";
 import { AdvancedMetricsView } from "./advancedMetricsView.js";
 import { PriorityCarouselView } from "./priorityCarouselView.js";
+import { DuduTrack } from "../dudutrack.js";
 
 export const DashboardView = {
   currentChartMode: "bar", // "bar" ou "donut"
@@ -44,6 +45,9 @@ export const DashboardView = {
             <span>Iniciar Lição Agora</span>
           </button>
         </div>
+
+        <!-- Assistente Virtual Mascote DuduTrack -->
+        <div id="dudutrack-container"></div>
 
         <!-- Métricas Rápidas (4 Cards no Desktop) -->
         <div class="stats-grid">
@@ -110,6 +114,7 @@ export const DashboardView = {
 
     // Renderiza os componentes e gráficos
     this.renderChart(subjects);
+    DuduTrack.render("dudutrack-container");
     PriorityCarouselView.render("priority-carousel-container");
     AdvancedMetricsView.render("advanced-metrics-container");
 

@@ -254,6 +254,9 @@ export const TasksView = {
         const updated = store.getTaskById(id);
         if (updated && updated.status === "completed") {
           window.appToast("Tarefa concluída! 🎉", "success");
+          if (window.DuduTrack) {
+            window.DuduTrack.triggerEvent("task_completed", { task: updated });
+          }
         }
         this.render(container);
       });
